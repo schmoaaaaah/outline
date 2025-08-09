@@ -27,29 +27,6 @@ export function resolve<T>(value: any, context: ActionContext): T {
   return typeof value === "function" ? value(context) : value;
 }
 
-export function createAction(definition: Optional<Action, "id">): Action {
-  return {
-    ...definition,
-    perform: definition.perform
-      ? (context) => {
-          // We must use the specific analytics name here as the action name is
-          // translated and potentially contains user strings.
-          if (definition.analyticsName) {
-            Analytics.track("perform_action", definition.analyticsName, {
-              context: context.isButton
-                ? "button"
-                : context.isCommandBar
-                  ? "commandbar"
-                  : "contextmenu",
-            });
-          }
-          return definition.perform?.(context);
-        }
-      : undefined,
-    id: definition.id ?? uuidv4(),
-  };
-}
-
 export function actionToMenuItem(
   action: Action,
   context: ActionContext
@@ -107,52 +84,6 @@ export function actionToMenuItem(
     onClick: () => performAction(action, context),
     selected: action.selected?.(context),
   };
-}
-
-export function actionToKBar(
-  action: Action,
-  context: ActionContext
-): KbarAction[] {
-  if (typeof action.visible === "function" && !action.visible(context)) {
-    return [];
-  }
-
-  const resolvedIcon = resolve<React.ReactElement>(action.icon, context);
-  const resolvedChildren = resolve<Action[]>(action.children, context);
-  const resolvedSection = resolve<string>(action.section, context);
-  const resolvedName = resolve<string>(action.name, context);
-  const resolvedPlaceholder = resolve<string>(action.placeholder, context);
-  const children = resolvedChildren
-    ? flattenDeep(resolvedChildren.map((a) => actionToKBar(a, context))).filter(
-        (a) => !!a
-      )
-    : [];
-
-  const sectionPriority =
-    typeof action.section !== "string" && "priority" in action.section
-      ? ((action.section.priority as number) ?? 0)
-      : 0;
-
-  return [
-    {
-      id: action.id,
-      name: resolvedName,
-      analyticsName: action.analyticsName,
-      section: resolvedSection,
-      placeholder: resolvedPlaceholder,
-      keywords: action.keywords ?? "",
-      shortcut: action.shortcut || [],
-      icon: resolvedIcon,
-      priority: (1 + (action.priority ?? 0)) * (1 + (sectionPriority ?? 0)),
-      perform:
-        action.perform || action.to
-          ? () => performAction(action, context)
-          : undefined,
-    },
-  ].concat(
-    // @ts-expect-error ts-migrate(2769) FIXME: No overload matches this call.
-    children.map((child) => ({ ...child, parent: child.parent ?? action.id }))
-  );
 }
 
 export async function performAction(action: Action, context: ActionContext) {
