@@ -25,8 +25,8 @@ import DynamicCollectionIcon from "~/components/Icons/CollectionIcon";
 import SharePopover from "~/components/Sharing/Collection/SharePopover";
 import { getHeaderExpandedKey } from "~/components/Sidebar/components/Header";
 import {
-  createAction,
   createActionV2,
+  createActionV2WithChildren,
   createInternalLinkActionV2,
 } from "~/actions";
 import { ActiveCollectionSection, CollectionSection } from "~/actions/sections";
@@ -42,7 +42,7 @@ const ColorCollectionIcon = ({ collection }: { collection: Collection }) => (
   <DynamicCollectionIcon collection={collection} />
 );
 
-export const openCollection = createAction({
+export const openCollection = createActionV2WithChildren({
   name: ({ t }) => t("Open collection"),
   analyticsName: "Open collection",
   section: CollectionSection,
@@ -50,19 +50,21 @@ export const openCollection = createAction({
   icon: <CollectionIcon />,
   children: ({ stores }) => {
     const collections = stores.collections.orderedData;
-    return collections.map((collection) => ({
-      // Note: using url which includes the slug rather than id here to bust
-      // cache if the collection is renamed
-      id: collection.path,
-      name: collection.name,
-      icon: <ColorCollectionIcon collection={collection} />,
-      section: CollectionSection,
-      to: collection.path,
-    }));
+    return collections.map((collection) =>
+      createInternalLinkActionV2({
+        // Note: using url which includes the slug rather than id here to bust
+        // cache if the collection is renamed
+        id: collection.path,
+        name: collection.name,
+        icon: <ColorCollectionIcon collection={collection} />,
+        section: CollectionSection,
+        to: collection.path,
+      })
+    );
   },
 });
 
-export const createCollection = createAction({
+export const createCollection = createActionV2({
   name: ({ t }) => t("New collection"),
   analyticsName: "New collection",
   section: CollectionSection,

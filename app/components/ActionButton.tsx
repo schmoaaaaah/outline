@@ -3,12 +3,7 @@ import * as React from "react";
 import Tooltip, { Props as TooltipProps } from "~/components/Tooltip";
 import { performAction, performActionV2, resolve } from "~/actions";
 import useIsMounted from "~/hooks/useIsMounted";
-import {
-  Action,
-  ActionContext,
-  ActionV2Variant,
-  ActionV2WithChildren,
-} from "~/types";
+import { ActionContext, ActionV2Variant, ActionV2WithChildren } from "~/types";
 
 export type Props = React.HTMLAttributes<HTMLButtonElement> & {
   /** Show the button in a disabled state */
@@ -16,7 +11,7 @@ export type Props = React.HTMLAttributes<HTMLButtonElement> & {
   /** Hide the button entirely if action is not applicable */
   hideOnActionDisabled?: boolean;
   /** Action to use on button */
-  action?: Action | Exclude<ActionV2Variant, ActionV2WithChildren>;
+  action?: Exclude<ActionV2Variant, ActionV2WithChildren>;
   /** Context of action, must be provided with action */
   context?: ActionContext;
   /** If tooltip props are provided the button will be wrapped in a tooltip */

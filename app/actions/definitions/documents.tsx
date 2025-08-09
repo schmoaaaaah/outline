@@ -55,7 +55,6 @@ import SharePopover from "~/components/Sharing/Document";
 import { getHeaderExpandedKey } from "~/components/Sidebar/components/Header";
 import DocumentTemplatizeDialog from "~/components/TemplatizeDialog";
 import {
-  createAction,
   createActionV2,
   createActionV2Group,
   createActionV2WithChildren,
@@ -85,7 +84,7 @@ import capitalize from "lodash/capitalize";
 import CollectionIcon from "~/components/Icons/CollectionIcon";
 import { ActionV2, ActionV2Group, ActionV2Separator } from "~/types";
 
-export const openDocument = createAction({
+export const openDocument = createActionV2WithChildren({
   name: ({ t }) => t("Open document"),
   analyticsName: "Open document",
   section: DocumentSection,
@@ -99,19 +98,21 @@ export const openDocument = createAction({
     );
     const documents = stores.documents.orderedData;
 
-    return uniqBy([...documents, ...nodes], "id").map((item) => ({
-      // Note: using url which includes the slug rather than id here to bust
-      // cache if the document is renamed
-      id: item.url,
-      name: item.title,
-      icon: item.icon ? (
-        <Icon value={item.icon} color={item.color ?? undefined} />
-      ) : (
-        <DocumentIcon />
-      ),
-      section: DocumentSection,
-      to: item.url,
-    }));
+    return uniqBy([...documents, ...nodes], "id").map((item) =>
+      createInternalLinkActionV2({
+        // Note: using url which includes the slug rather than id here to bust
+        // cache if the document is renamed
+        id: item.url,
+        name: item.title,
+        icon: item.icon ? (
+          <Icon value={item.icon} color={item.color ?? undefined} />
+        ) : (
+          <DocumentIcon />
+        ),
+        section: DocumentSection,
+        to: item.url,
+      })
+    );
   },
 });
 
@@ -147,7 +148,7 @@ export const editDocument = createInternalLinkActionV2({
   },
 });
 
-export const createDocument = createAction({
+export const createDocument = createInternalLinkActionV2({
   name: ({ t }) => t("New document"),
   analyticsName: "New document",
   section: DocumentSection,
@@ -165,13 +166,18 @@ export const createDocument = createAction({
       !!currentTeamId && stores.policies.abilities(currentTeamId).createDocument
     );
   },
-  perform: ({ activeCollectionId, sidebarContext }) =>
-    history.push(newDocumentPath(activeCollectionId), {
-      sidebarContext,
-    }),
+  to: ({ activeCollectionId, sidebarContext }) => {
+    const [pathname, search] = newDocumentPath(activeCollectionId).split("?");
+
+    return {
+      pathname,
+      search,
+      state: { sidebarContext },
+    };
+  },
 });
 
-export const createDraftDocument = createAction({
+export const createDraftDocument = createInternalLinkActionV2({
   name: ({ t }) => t("New draft"),
   analyticsName: "New document",
   section: DocumentSection,
@@ -179,10 +185,10 @@ export const createDraftDocument = createAction({
   keywords: "create document",
   visible: ({ currentTeamId, stores }) =>
     !!currentTeamId && stores.policies.abilities(currentTeamId).createDocument,
-  perform: ({ sidebarContext }) =>
-    history.push(newDocumentPath(), {
-      sidebarContext,
-    }),
+  to: ({ sidebarContext }) => ({
+    pathname: newDocumentPath(),
+    state: { sidebarContext },
+  }),
 });
 
 export const createDocumentFromTemplate = createInternalLinkActionV2({
@@ -919,7 +925,7 @@ export const createTemplateFromDocument = createActionV2({
   },
 });
 
-export const openRandomDocument = createAction({
+export const openRandomDocument = createActionV2({
   id: "random",
   name: ({ t }) => t(`Open random document`),
   analyticsName: "Open random document",
@@ -939,7 +945,7 @@ export const openRandomDocument = createAction({
 });
 
 export const searchDocumentsForQuery = (query: string) =>
-  createAction({
+  createInternalLinkActionV2({
     id: "search",
     name: ({ t }) =>
       t(`Search documents for "{{searchQuery}}"`, { searchQuery: query }),
@@ -1258,7 +1264,7 @@ export const permanentlyDeleteDocument = createActionV2({
   },
 });
 
-export const permanentlyDeleteDocumentsInTrash = createAction({
+export const permanentlyDeleteDocumentsInTrash = createActionV2({
   name: ({ t }) => t("Empty trash"),
   analyticsName: "Empty trash",
   section: TrashSection,
